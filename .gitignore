@@ -1,0 +1,16 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dart
+.dart_tool/
+build/
+pubspec.lock
+*.g.dart.bak
+
+# editors / os
+.idea/
+.vscode/
+*.iml
+.DS_Store

@@ -1,0 +1,8 @@
+name: jev_demos_workspace
+description: Monorepo of demos built on TypeSafe's Jev (System One) model. Each package is one demo.
+publish_to: none
+environment:
+  sdk: ^3.11.0
+workspace:
+  - packages/jev_common
+  - packages/maze_lookahead
