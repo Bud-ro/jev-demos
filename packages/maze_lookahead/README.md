@@ -1,30 +1,17 @@
 # maze_lookahead
 
-Checking spatial reasoning and its ability to think ahead.
+Puts Jev's maze solving skills to the test. This demo tests the model's ability to use spatial reasoning, and in particular apply that spatial reasoning to future steps. The most interesting application here is _simultaneous move making_. Instead of just asking for the next move, we ask for the next N moves with N different questions. Any invalid move (backtracking, bumping into a wall, or moving off the goal after stepping on it) is a failure for our purposes.
 
-For 10 trials, give Jev state showing an ASCII maze. We trial this on mazes of
-size 5, 10, 20, 50, 100, 200, 500, 1000 (we start hitting token limits kind of
-quick here). Then multiply that by the number of choices we give the model to
-work with: choices of the form "What should be the Nth move from this position"
-with UP/LEFT/RIGHT/DOWN/NONE. Supposedly it doesn't even matter if we ask these
-questions all at once, it won't affect the other answers, so we ask as _many_ as
-we can (probably can push over 100). That lets us build out data such as:
+Even though we ask N questions, we test the model's ability when only following the first M decisions, across different NxN mazes of different sizes.
 
-- The max number of moves it can make without error (backtracking, bumping into
-  a wall, or moving off the goal after already stepping on it, ignoring predicted
-  steps after the first NONE step) for any given puzzle size of NxN.
-- Average number of iterations to get to the end.
+```bash
+dart run maze_lookahead plan                       # napkin math
+dart run maze_lookahead --preset smoke --mock all  # Use BFS and deterministically solve puzzles
+dart run maze_lookahead --preset quick all         # Real run
+```
 
-Minimally: "only follow step N=1 in a loop" plus "follow ALL steps N=1, N=2, etc.
-that the AI gave (even invalid ones)". Hard cap on move count: 5*minimum_number_of_moves.
+## Other Experimental Settings
 
-Runs "single threaded" (never querying Jev in parallel to be respectful). Quick
-preset is ~10 minutes, full is under 1hr. Data is recorded so we can generate
-visuals (particularly GIFs) later.
-
-    dart run maze_lookahead plan                       # napkin math
-    dart run maze_lookahead --preset smoke --mock all  # [TODO]
-    dart run maze_lookahead --preset quick all
-
-Later: does adding "history" to state allow it to solve mazes more reliably in
-the cases where it gets lost? Save that for after our first initial experiment.
+Below are a handful of things you might try to see the results:
+- Does adding move history to `state` allow Jev to solve mazes more reliably? Or does it help in cases where it gets lost? 
+- Does adding a "recommended" step size, "difficulty" of maze, etc. change results?

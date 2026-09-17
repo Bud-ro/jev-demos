@@ -1,10 +1,6 @@
 # jev-demos
 
-I got access to TypeSafe's Jev model. I want to build some demos.
-
-Built in Dart since I like that language the most. Mono-repo approach, where
-every package is its own demo. Common scaffold code lives in `packages/jev_common`:
-a shim for their API (or anything else) if needed.
+A collection of demos utilizing the system one models from TypeSafe AI.
 
 | Package | What |
 | --- | --- |
@@ -13,13 +9,4 @@ a shim for their API (or anything else) if needed.
 
 ## Setup
 
-`.env` is in gitignore, it should be set up and ready (copy `.env.example`).
-
-    dart pub get
-    dart test packages/jev_common packages/maze_lookahead
-
-## Run
-
-    dart run maze_lookahead --help
-
-[TODO] conventions / anything else worth saying.
+Put your API key into `.env` and then follow demo specific examples.
