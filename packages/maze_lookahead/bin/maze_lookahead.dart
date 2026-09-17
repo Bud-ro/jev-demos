@@ -18,6 +18,7 @@ Commands
   sweep          the main loop: ask k steps, apply step 1, repeat (records everything)
   analyze <dir>  re-run the analysis on an existing results directory
   plan           napkin math: worst-case calls and time for the chosen preset
+  ablate         run the sweep once per state variant and compare (small mazes)
   show           print a maze, the state JSON, and sample questions
 
 Every API call is made sequentially; nothing runs in parallel.
@@ -37,6 +38,8 @@ void main(List<String> argv) async {
         allowed: Phrasing.values.map((p) => p.name).toList(),
         help: 'Force a question phrasing instead of using the phrasing winner.')
     ..addOption('algo', allowed: ['prim', 'dfs'], help: 'Maze generator.')
+    ..addOption('state', allowed: StateOptions.variants.keys.toList(),
+        defaultsTo: 'baseline', help: 'Which pieces of context go into the state.')
     ..addFlag('trail', defaultsTo: true, help: 'Draw visited cells as "." in the maze.')
     ..addOption('seed', help: 'Base RNG seed for maze generation.')
     ..addOption('delay-ms', help: 'Pause between API calls.')
@@ -82,6 +85,8 @@ void main(List<String> argv) async {
       }
       final analysis = await analyzeRun(Directory(args.rest[1]));
       print(analysis.report);
+    case 'ablate':
+      await _ablate(cfg, args);
     case 'all':
     case 'probe':
     case 'phrasing':
@@ -105,6 +110,7 @@ DemoConfig _configFrom(ArgResults args) {
     cfg = cfg.copyWith(phrasing: Phrasing.parse(args['phrasing'] as String));
   }
   if (args['algo'] != null) cfg = cfg.copyWith(algo: args['algo'] as String);
+  cfg = cfg.copyWith(stateVariant: args['state'] as String);
   cfg = cfg.copyWith(showTrail: args['trail'] as bool);
   if (args['seed'] != null) cfg = cfg.copyWith(seed: int.parse(args['seed'] as String));
   if (args['delay-ms'] != null) {
@@ -148,7 +154,8 @@ String _defaultOut() {
 void _show(DemoConfig cfg, int size) {
   final maze = Maze.generate(size, seed: cfg.seed + size * 1000, algo: cfg.algo);
   final walker = Walker(maze);
-  final state = buildState(maze, walker, showTrail: cfg.showTrail);
+  final state = buildState(maze, walker,
+      options: StateOptions.named(cfg.stateVariant).copyWith(trail: cfg.showTrail));
   print('size=$size grid=${maze.width}x${maze.width} chars=${maze.charCount} '
       'optimalMoves=${maze.solutionLength} hardCap=${DemoConfig.hardCapMultiplier * maze.solutionLength}');
   print('');
@@ -187,7 +194,73 @@ void _plan(DemoConfig cfg, Directory? measuredFrom) {
   print(formatEstimate(estimate));
 }
 
-Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
+/// Runs the sweep once per state variant on a small plan and prints a
+/// side-by-side comparison. Defaults: size 5, 3 mazes, cap 30, k 25.
+Future<void> _ablate(DemoConfig base, ArgResults args) async {
+  var cfg = base;
+  if (args['sizes'] == null) cfg = cfg.copyWith(plan: [const SizePlan(5, trials: 3, iterCap: 30)]);
+  if (args['trials'] == null) {
+    cfg = cfg.copyWith(plan: [for (final p in cfg.plan) SizePlan(p.size, trials: 3, iterCap: p.iterCap)]);
+  }
+  if (args['iter-cap'] == null) {
+    cfg = cfg.copyWith(plan: [for (final p in cfg.plan) SizePlan(p.size, trials: p.trials, iterCap: 30)]);
+  }
+  if (args['k'] == null) cfg = cfg.copyWith(k: 25);
+  if (args['phrasing'] == null) cfg = cfg.copyWith(phrasing: Phrasing.bare);
+
+  final rows = <List<String>>[];
+  for (final variant in StateOptions.variants.keys) {
+    print('');
+    print('===== state variant: $variant');
+    final dir = await _runPhases(
+      cfg.copyWith(stateVariant: variant, label: 'ablate-$variant'),
+      args,
+      'sweep',
+      quiet: true,
+    );
+    final summary = jsonDecode(File('${dir.path}/summary.json').readAsStringSync())
+        as Map<String, dynamic>;
+    final meta = summary['meta'] as Map<String, dynamic>;
+    var solved = 0, trials = 0;
+    var clean = 0.0, valid = 0.0, optimal = 0.0, n = 0;
+    final errors = <String, int>{};
+    for (final e in (summary['perSize'] as Map<String, dynamic>).values) {
+      final a = e['modeA'] as Map<String, dynamic>;
+      final b = e['modeB'] as Map<String, dynamic>;
+      solved += a['solved'] as int;
+      trials += a['trials'] as int;
+      clean += ((a['meanMovesBeforeFirstError'] as num?) ?? 0) * (a['trials'] as int);
+      valid += ((b['meanValidPrefix'] as num?) ?? 0) * (b['requestsFromStart'] as int);
+      optimal += ((b['meanOptimalPrefix'] as num?) ?? 0) * (b['requestsFromStart'] as int);
+      n += b['requestsFromStart'] as int;
+      for (final err in (a['errors'] as Map<String, dynamic>).entries) {
+        errors[err.key] = (errors[err.key] ?? 0) + (err.value as int);
+      }
+    }
+    rows.add([
+      variant,
+      '$solved/$trials',
+      trials == 0 ? '' : (clean / trials).toStringAsFixed(1),
+      n == 0 ? '' : (valid / n).toStringAsFixed(1),
+      n == 0 ? '' : (optimal / n).toStringAsFixed(1),
+      errors.entries.map((e) => '${e.key}=${e.value}').join(' '),
+      '${meta['inputTokens']}',
+      JevPricing.usd((meta['costUsd'] as num).toDouble()),
+    ]);
+  }
+  print('');
+  print('State variant comparison (Mode A loop, sizes ${cfg.plan.map((p) => p.size).join(',')}, '
+      '${cfg.plan.first.trials} mazes each, cap ${cfg.plan.first.iterCap}, k=${cfg.k})');
+  print(table(
+    ['variant', 'solved', 'cleanMoves', 'validPrefix', 'optimalPrefix', 'errors', 'inputTok', 'cost'],
+    rows,
+  ));
+  print('  cleanMoves = loop moves before the first error; validPrefix/optimalPrefix =');
+  print('  one-shot plan from the start position (Mode B).');
+}
+
+Future<Directory> _runPhases(DemoConfig cfg, ArgResults args, String command,
+    {bool quiet = false}) async {
   final mock = args['mock'] as bool;
   final startedAt = DateTime.now();
   final env = loadEnv();
@@ -222,7 +295,7 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
   final run = RunDir.create(cfg.outBase, label);
   final logFile = run.file('log.txt').openWrite();
   void log(String line) {
-    print(line);
+    if (!quiet || !line.startsWith('[sweep] ') || line.contains(' done: ')) print(line);
     logFile.writeln(line);
   }
 
@@ -287,7 +360,10 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
   }
 
   final analysis = await analyzeRun(run.dir);
-  print('');
-  print(analysis.report);
+  if (!quiet) {
+    print('');
+    print(analysis.report);
+  }
   print('summary: ${run.file('summary.json').path}');
+  return run.dir;
 }

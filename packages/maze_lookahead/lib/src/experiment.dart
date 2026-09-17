@@ -42,6 +42,7 @@ class DemoConfig {
     required this.timeBudget,
     required this.outBase,
     required this.label,
+    this.stateVariant = 'baseline',
   });
 
   final String preset;
@@ -69,6 +70,9 @@ class DemoConfig {
   final Duration timeBudget;
   final String outBase;
   final String label;
+
+  /// Which [StateOptions.variants] entry to build the state with.
+  final String stateVariant;
 
   /// Every episode stops after `hardCapMultiplier * solutionLength` moves.
   static const hardCapMultiplier = 5;
@@ -165,6 +169,7 @@ class DemoConfig {
     Duration? timeBudget,
     String? outBase,
     String? label,
+    String? stateVariant,
   }) =>
       DemoConfig(
         preset: preset,
@@ -184,6 +189,7 @@ class DemoConfig {
         timeBudget: timeBudget ?? this.timeBudget,
         outBase: outBase ?? this.outBase,
         label: label ?? this.label,
+        stateVariant: stateVariant ?? this.stateVariant,
       );
 
   Map<String, Object?> toJson() => {
@@ -199,6 +205,7 @@ class DemoConfig {
         'independenceKs': independenceKs,
         'algo': algo,
         'showTrail': showTrail,
+        'stateVariant': stateVariant,
         'seed': seed,
         'delayMs': delay.inMilliseconds,
         'timeBudgetMin': timeBudget.inMinutes,
@@ -290,7 +297,9 @@ class Experiment {
     if (cfg.delay > Duration.zero && calls > 0) {
       await Future<void>.delayed(cfg.delay);
     }
-    final state = buildState(maze, walker, showTrail: cfg.showTrail);
+    final options = StateOptions.named(cfg.stateVariant);
+    final state = buildState(maze, walker,
+        options: options.copyWith(trail: options.trail && cfg.showTrail));
     final questions = stepQuestions(phrasing, k);
     final bodyChars =
         jsonEncode(client.buildBody(state: state, questions: questions)).length;
@@ -303,6 +312,7 @@ class Experiment {
       'trial': trial,
       'iteration': iteration,
       'phrasing': phrasing.name,
+      'stateVariant': cfg.stateVariant,
       'k': k,
       'position': [walker.pos.r, walker.pos.c],
       'visited': walker.visited.length,

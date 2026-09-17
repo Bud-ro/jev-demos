@@ -53,12 +53,17 @@ class MockJev {
 
     final state = body['state'] as Map<String, dynamic>;
     final lines = (state['maze'] as String).split('\n');
-    final pos = state['position'] as Map<String, dynamic>;
-    final goal = state['goal'] as Map<String, dynamic>;
+    final pos = state['position'] as Map<String, dynamic>?;
+    final goal = state['goal'] as Map<String, dynamic>?;
+    // With coordinates omitted, find @ and G in the grid; if @ stands on G
+    // the goal is hidden, so fall back to the bottom-right cell.
+    final w = lines.first.length;
     final maze = Maze.parse(
       lines,
-      at: (r: pos['row'] as int, c: pos['col'] as int),
-      goalAt: (r: goal['row'] as int, c: goal['col'] as int),
+      at: pos == null ? null : (r: pos['row'] as int, c: pos['col'] as int),
+      goalAt: goal == null
+          ? (lines.any((l) => l.contains('G')) ? null : (r: w - 2, c: w - 2))
+          : (r: goal['row'] as int, c: goal['col'] as int),
     );
     final optimal = maze.optimalMoves(from: maze.start);
 

@@ -5,6 +5,7 @@ import 'package:maze_lookahead/maze_lookahead.dart';
 import 'package:test/test.dart';
 
 void main() {
+  _stateVariantTests();
   group('Maze', () {
     for (final algo in ['prim', 'dfs']) {
       test('$algo generates a perfect maze that is solvable and deterministic', () {
@@ -147,6 +148,26 @@ void main() {
         ),
         throwsA(isA<JevApiException>().having((e) => e.status, 'status', 422)),
       );
+    });
+  });
+}
+
+void _stateVariantTests() {
+  group('StateOptions', () {
+    test('adjacent tiles and omitted fields', () {
+      final m = Maze.generate(5, seed: 1);
+      final w = Walker(m);
+      final adj = adjacentTiles(m, w);
+      expect(adj['UP'], 'wall');
+      expect(adj['LEFT'], 'wall');
+      expect(adj.values.where((v) => v == 'open').length, greaterThanOrEqualTo(1));
+      final minimal = buildState(m, w, options: StateOptions.named('minimal'));
+      expect(minimal.containsKey('position'), isFalse);
+      expect(minimal.containsKey('moves_so_far'), isFalse);
+      final lean = buildState(m, w, options: StateOptions.named('lean'));
+      expect(lean.keys, ['task', 'legend', 'adjacent', 'maze']);
+      w.apply(m.optimalMoves().first);
+      expect(adjacentTiles(m, w).values, contains('visited'));
     });
   });
 }
