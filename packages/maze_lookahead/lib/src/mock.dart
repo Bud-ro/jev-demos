@@ -75,21 +75,24 @@ class MockJev {
       final n = _stepNumber(q['instructions']);
       final wanted = n <= optimal.length ? optimal[n - 1] : Dir.none;
       final pCorrect = accuracy * math.pow(decay, n - 1);
-      Dir chosen;
-      if (_rng.nextDouble() < pCorrect) {
-        chosen = wanted;
+      // Answer in whatever label style the request used; if the wanted
+      // direction is not offered (no NONE option), pick at random.
+      final byDir = {for (final o in options) Dir.fromLabel(o): o};
+      String chosen;
+      if (byDir.containsKey(wanted) && _rng.nextDouble() < pCorrect) {
+        chosen = byDir[wanted]!;
       } else {
-        final wrong = Dir.values.where((d) => d != wanted).toList();
+        final wrong = options.where((o) => o != byDir[wanted]).toList();
         chosen = wrong[_rng.nextInt(wrong.length)];
       }
       final peak = 0.55 + _rng.nextDouble() * 0.4;
       final rest = (1 - peak) / (options.length - 1);
       final probs = {
-        for (final o in options) o: o == chosen.label ? peak : rest,
+        for (final o in options) o: o == chosen ? peak : rest,
       };
       answers[entry.key] = {
         'type': 'choice',
-        'choice': chosen.label,
+        'choice': chosen,
         'probabilities': probs,
         'confidence': peak,
       };
@@ -107,8 +110,8 @@ class MockJev {
 
   static int _stepNumber(Object? instructions) {
     final text = instructions is String ? instructions : jsonEncode(instructions);
+    // The direct phrasing's first question has no number ("move next").
     final m = RegExp(r'\d+').firstMatch(text);
-    if (m == null) throw FormatException('No step number in "$text"');
-    return int.parse(m.group(0)!);
+    return m == null ? 1 : int.parse(m.group(0)!);
   }
 }

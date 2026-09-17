@@ -19,45 +19,72 @@ enum Phrasing {
   question,
 
   /// `"Step 3"` plus a description on every option.
-  described;
+  described,
+
+  /// `"Which direction should @ move next to reach G by the shortest route?"`
+  /// (move 1) and `"... on move number 3 ..."` for later steps. Closest to a
+  /// plain next-move query.
+  direct;
 
   static Phrasing parse(String s) => Phrasing.values.byName(s);
 }
 
-const _describedCriteria = <String, String?>{
-  'UP': 'Move one character up (row - 1).',
-  'DOWN': 'Move one character down (row + 1).',
-  'LEFT': 'Move one character left (col - 1).',
-  'RIGHT': 'Move one character right (col + 1).',
-  'NONE': 'Do not move. Only correct once @ is standing on G.',
-};
-
-const _bareCriteria = <String, String?>{
-  'UP': null,
-  'DOWN': null,
-  'LEFT': null,
-  'RIGHT': null,
-  'NONE': null,
-};
+Map<String, String?> _criteria(DirLabels labels, bool includeNone,
+    {bool described = false}) {
+  String? desc(Dir d) => !described
+      ? null
+      : switch (d) {
+          Dir.up => 'Move one character up (row - 1).',
+          Dir.down => 'Move one character down (row + 1).',
+          Dir.left => 'Move one character left (col - 1).',
+          Dir.right => 'Move one character right (col + 1).',
+          Dir.none => 'Do not move. Only correct once @ is standing on G.',
+        };
+  return {
+    for (final d in Dir.moves) d.labelFor(labels): desc(d),
+    if (includeNone) Dir.none.labelFor(labels): desc(Dir.none),
+  };
+}
 
 /// Builds the Choice question for move number [n] (1-based).
-Choice stepQuestion(Phrasing phrasing, int n) => switch (phrasing) {
-      Phrasing.bare => Choice('$n', _bareCriteria),
-      Phrasing.step => Choice('Step $n', _bareCriteria),
-      Phrasing.move => Choice('Move for step $n', _bareCriteria),
-      Phrasing.question => Choice(
-          'What should be move number $n from the current position?',
-          _bareCriteria,
-        ),
-      Phrasing.described => Choice('Step $n', _describedCriteria),
-    };
+Choice stepQuestion(
+  Phrasing phrasing,
+  int n, {
+  DirLabels labels = DirLabels.arrows,
+  bool includeNone = true,
+}) {
+  final c = _criteria(labels, includeNone);
+  return switch (phrasing) {
+    Phrasing.bare => Choice('$n', c),
+    Phrasing.step => Choice('Step $n', c),
+    Phrasing.move => Choice('Move for step $n', c),
+    Phrasing.question => Choice(
+        'What should be move number $n from the current position?', c),
+    Phrasing.described =>
+      Choice('Step $n', _criteria(labels, includeNone, described: true)),
+    Phrasing.direct => Choice(
+        n == 1
+            ? 'Which direction should @ move next to reach G by the shortest route?'
+            : 'Which direction should @ move on move number $n (counting from '
+                'the current position, 1 being the very next move) to reach G '
+                'by the shortest route?',
+        c),
+  };
+}
 
 /// Question id for step [n]. Ids are for code only; not sent to the model.
 String stepId(int n) => 's$n';
 
 /// Builds `k` step questions, 1..k.
-Map<String, Question> stepQuestions(Phrasing phrasing, int k) => {
-      for (var n = 1; n <= k; n++) stepId(n): stepQuestion(phrasing, n),
+Map<String, Question> stepQuestions(
+  Phrasing phrasing,
+  int k, {
+  DirLabels labels = DirLabels.arrows,
+  bool includeNone = true,
+}) =>
+    {
+      for (var n = 1; n <= k; n++)
+        stepId(n): stepQuestion(phrasing, n, labels: labels, includeNone: includeNone),
     };
 
 /// Parses the step number back out of a question id.
@@ -72,6 +99,8 @@ class StateOptions {
     this.neighbors = false,
     this.trail = true,
     this.leanRules = false,
+    this.labels = DirLabels.arrows,
+    this.includeNone = true,
   });
 
   /// Include `position` and `goal` row/col plus the coordinate rule.
@@ -89,13 +118,28 @@ class StateOptions {
   /// Replace the long task/rules text with a few short lines.
   final bool leanRules;
 
-  StateOptions copyWith({bool? trail}) => StateOptions(
+  /// Direction naming used in both the state text and the questions.
+  final DirLabels labels;
+
+  /// Offer NONE as an answer. Without it, code detects the goal.
+  final bool includeNone;
+
+  StateOptions copyWith({bool? trail, DirLabels? labels, bool? includeNone}) =>
+      StateOptions(
         coordinates: coordinates,
         movesSoFar: movesSoFar,
         neighbors: neighbors,
         trail: trail ?? this.trail,
         leanRules: leanRules,
+        labels: labels ?? this.labels,
+        includeNone: includeNone ?? this.includeNone,
       );
+
+  /// The answer labels in display order.
+  List<String> get answerLabels => [
+        for (final d in Dir.moves) d.labelFor(labels),
+        if (includeNone) Dir.none.labelFor(labels),
+      ];
 
   /// Named variants for `--state` and the `ablate` command.
   static const variants = <String, StateOptions>{
@@ -120,9 +164,11 @@ class StateOptions {
 }
 
 /// What sits on the tile one step in each direction from the walker.
-Map<String, String> adjacentTiles(Maze maze, Walker walker) => {
+Map<String, String> adjacentTiles(Maze maze, Walker walker,
+        {DirLabels labels = DirLabels.arrows}) =>
+    {
       for (final d in Dir.moves)
-        d.label: () {
+        d.labelFor(labels): () {
           final p = d.apply(walker.pos);
           if (maze.isWall(p)) return 'wall';
           if (p == maze.goal) return 'goal';
@@ -146,15 +192,20 @@ Map<String, Object?> buildState(
     'G': 'the goal',
     if (options.trail) '.': 'open floor you already visited',
   };
+  final l = options.labels;
+  final up = Dir.up.labelFor(l), down = Dir.down.labelFor(l);
+  final left = Dir.left.labelFor(l), right = Dir.right.labelFor(l);
+  final none = Dir.none.labelFor(l);
   if (options.leanRules) {
     return {
       'task': 'Navigate the ASCII maze from @ to G by the shortest route. '
-          'UP, DOWN, LEFT and RIGHT each move @ one character. Never move onto '
-          '# and never back onto a visited tile. Answer NONE only when @ is '
-          'standing on G. Question N asks for the Nth move from the current '
+          '$up, $down, $left and $right each move @ one character. Never move '
+          'onto # and never back onto a visited tile. '
+          '${options.includeNone ? 'Answer $none only when @ is standing on G. ' : ''}'
+          'Question N asks for the Nth move from the current '
           'position: 1 is the next move, 2 the one after it, and so on.',
       'legend': legend,
-      if (options.neighbors) 'adjacent': adjacentTiles(maze, walker),
+      if (options.neighbors) 'adjacent': adjacentTiles(maze, walker, labels: l),
       'maze': maze.renderString(at: walker.pos, trail: trail),
     };
   }
@@ -167,22 +218,23 @@ Map<String, Object?> buildState(
     'grid_rules': {
       if (options.coordinates)
         'coordinates': 'row 0 is the top line, col 0 is the leftmost character.',
-      'movement': 'Each move shifts @ by exactly one character: UP is row-1, '
-          'DOWN is row+1, LEFT is col-1, RIGHT is col+1.',
+      'movement': 'Each move shifts @ by exactly one character: $up is row-1, '
+          '$down is row+1, $left is col-1, $right is col+1.',
       'walls': 'You can never move onto a # character or off the grid.',
       'revisits': 'Never move back onto a position you have already visited.',
-      'finish': 'Once @ stands on G, every remaining move is NONE.',
+      if (options.includeNone)
+        'finish': 'Once @ stands on G, every remaining move is $none.',
     },
     'legend': legend,
     'questions':
         'Each question asks for one move in the planned sequence, numbered from '
             'the current position: question 1 is the very next move, question 2 '
             'the move after that, and so on. Answer every question with one of '
-            'UP, DOWN, LEFT, RIGHT, NONE.',
+            '${options.answerLabels.join(', ')}.',
     if (options.coordinates) 'position': {'row': walker.pos.r, 'col': walker.pos.c},
     if (options.coordinates) 'goal': {'row': maze.goal.r, 'col': maze.goal.c},
     if (options.movesSoFar) 'moves_so_far': walker.steps,
-    if (options.neighbors) 'adjacent': adjacentTiles(maze, walker),
+    if (options.neighbors) 'adjacent': adjacentTiles(maze, walker, labels: l),
     'maze': maze.renderString(at: walker.pos, trail: trail),
   };
 }

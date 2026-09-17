@@ -157,12 +157,15 @@ class SequenceEval {
 
 /// Replays [moves] from [from] (with [visited] already seen), stopping after
 /// the first NONE. Steps after an error are still simulated so a GIF can show
-/// the whole predicted sequence.
+/// the whole predicted sequence. With [stopAtGoal] (for question sets that
+/// have no NONE option) the replay ends, and counts as completed, as soon as
+/// the goal is reached.
 SequenceEval evaluateSequence(
   Maze maze,
   List<Dir> moves, {
   Pos? from,
   Set<Pos>? visited,
+  bool stopAtGoal = false,
 }) {
   final walker = Walker(maze, start: from, visited: visited);
   final optimal = maze.optimalMoves(from: walker.pos);
@@ -197,6 +200,10 @@ SequenceEval evaluateSequence(
     if (move == Dir.none) {
       completed = result.ok;
       truncated = true;
+      break;
+    }
+    if (stopAtGoal && result.ok && result.atGoal) {
+      completed = true;
       break;
     }
   }

@@ -3,23 +3,38 @@ import 'dart:math' as math;
 /// A grid coordinate on the character grid (row, col).
 typedef Pos = ({int r, int c});
 
+/// How directions are named in questions and state.
+enum DirLabels { arrows, compass }
+
 /// Movement on the character grid. One move = one character.
 enum Dir {
-  up(-1, 0, 'UP'),
-  down(1, 0, 'DOWN'),
-  left(0, -1, 'LEFT'),
-  right(0, 1, 'RIGHT'),
-  none(0, 0, 'NONE');
+  up(-1, 0, 'UP', 'N'),
+  down(1, 0, 'DOWN', 'S'),
+  left(0, -1, 'LEFT', 'W'),
+  right(0, 1, 'RIGHT', 'E'),
+  none(0, 0, 'NONE', 'NONE');
 
-  const Dir(this.dr, this.dc, this.label);
+  const Dir(this.dr, this.dc, this.label, this.compass);
   final int dr;
   final int dc;
+
+  /// Arrow-style label (UP/DOWN/LEFT/RIGHT/NONE).
   final String label;
 
-  static Dir fromLabel(String s) => Dir.values.firstWhere(
-        (d) => d.label == s.toUpperCase(),
-        orElse: () => throw ArgumentError('Unknown direction: $s'),
-      );
+  /// Compass-style label (N/S/W/E/NONE).
+  final String compass;
+
+  String labelFor(DirLabels style) =>
+      style == DirLabels.compass ? compass : label;
+
+  /// Accepts either label style, case-insensitively.
+  static Dir fromLabel(String s) {
+    final u = s.toUpperCase();
+    return Dir.values.firstWhere(
+      (d) => d.label == u || d.compass == u,
+      orElse: () => throw ArgumentError('Unknown direction: $s'),
+    );
+  }
 
   static const moves = [Dir.up, Dir.down, Dir.left, Dir.right];
 

@@ -43,6 +43,8 @@ class DemoConfig {
     required this.outBase,
     required this.label,
     this.stateVariant = 'baseline',
+    this.labels = DirLabels.arrows,
+    this.includeNone = true,
   });
 
   final String preset;
@@ -73,6 +75,18 @@ class DemoConfig {
 
   /// Which [StateOptions.variants] entry to build the state with.
   final String stateVariant;
+
+  /// Direction naming in state and questions.
+  final DirLabels labels;
+
+  /// Offer NONE as an answer; without it, code stops the loop at the goal.
+  final bool includeNone;
+
+  StateOptions get stateOptions => StateOptions.named(stateVariant).copyWith(
+        trail: StateOptions.named(stateVariant).trail && showTrail,
+        labels: labels,
+        includeNone: includeNone,
+      );
 
   /// Every episode stops after `hardCapMultiplier * solutionLength` moves.
   static const hardCapMultiplier = 5;
@@ -170,6 +184,8 @@ class DemoConfig {
     String? outBase,
     String? label,
     String? stateVariant,
+    DirLabels? labels,
+    bool? includeNone,
   }) =>
       DemoConfig(
         preset: preset,
@@ -190,6 +206,8 @@ class DemoConfig {
         outBase: outBase ?? this.outBase,
         label: label ?? this.label,
         stateVariant: stateVariant ?? this.stateVariant,
+        labels: labels ?? this.labels,
+        includeNone: includeNone ?? this.includeNone,
       );
 
   Map<String, Object?> toJson() => {
@@ -206,10 +224,66 @@ class DemoConfig {
         'algo': algo,
         'showTrail': showTrail,
         'stateVariant': stateVariant,
+        'labels': labels.name,
+        'includeNone': includeNone,
         'seed': seed,
         'delayMs': delay.inMilliseconds,
         'timeBudgetMin': timeBudget.inMinutes,
       };
+}
+
+/// A named bundle of prompt settings for A/B runs (`ablate --recipes`).
+class Recipe {
+  const Recipe({
+    required this.state,
+    required this.phrasing,
+    required this.labels,
+    required this.includeNone,
+    required this.k,
+  });
+  final String state;
+  final Phrasing phrasing;
+  final DirLabels labels;
+  final bool includeNone;
+  final int k;
+
+  DemoConfig apply(DemoConfig cfg) => cfg.copyWith(
+        stateVariant: state,
+        phrasing: phrasing,
+        labels: labels,
+        includeNone: includeNone,
+        k: k,
+      );
+
+  static const all = <String, Recipe>{
+    // What the sweep ran.
+    'baseline': Recipe(
+        state: 'baseline', phrasing: Phrasing.bare,
+        labels: DirLabels.arrows, includeNone: true, k: 25),
+    // Best state variant from the first ablation.
+    'nc': Recipe(
+        state: 'neighbors_coords', phrasing: Phrasing.bare,
+        labels: DirLabels.arrows, includeNone: true, k: 25),
+    // Closest to the vLLM DiffusionGemma demo: one next-move question,
+    // four compass options, no NONE, code stops at the goal.
+    'pr_like': Recipe(
+        state: 'baseline', phrasing: Phrasing.direct,
+        labels: DirLabels.compass, includeNone: false, k: 1),
+    'pr_like_arrows': Recipe(
+        state: 'baseline', phrasing: Phrasing.direct,
+        labels: DirLabels.arrows, includeNone: false, k: 1),
+    'pr_like_nc': Recipe(
+        state: 'neighbors_coords', phrasing: Phrasing.direct,
+        labels: DirLabels.compass, includeNone: false, k: 1),
+    // Same prompt as pr_like_nc but asking 25 steps: does batching hurt?
+    'direct_nc_k25': Recipe(
+        state: 'neighbors_coords', phrasing: Phrasing.direct,
+        labels: DirLabels.compass, includeNone: false, k: 25),
+    // Bare phrasing with NONE removed: is NONE the problem, or the wording?
+    'nc_nonone': Recipe(
+        state: 'neighbors_coords', phrasing: Phrasing.bare,
+        labels: DirLabels.arrows, includeNone: false, k: 25),
+  };
 }
 
 /// Outcome of one API call as the experiment sees it.
@@ -297,10 +371,10 @@ class Experiment {
     if (cfg.delay > Duration.zero && calls > 0) {
       await Future<void>.delayed(cfg.delay);
     }
-    final options = StateOptions.named(cfg.stateVariant);
-    final state = buildState(maze, walker,
-        options: options.copyWith(trail: options.trail && cfg.showTrail));
-    final questions = stepQuestions(phrasing, k);
+    final options = cfg.stateOptions;
+    final state = buildState(maze, walker, options: options);
+    final questions = stepQuestions(phrasing, k,
+        labels: options.labels, includeNone: options.includeNone);
     final bodyChars =
         jsonEncode(client.buildBody(state: state, questions: questions)).length;
     final index = calls++;
@@ -313,6 +387,8 @@ class Experiment {
       'iteration': iteration,
       'phrasing': phrasing.name,
       'stateVariant': cfg.stateVariant,
+      'labels': cfg.labels.name,
+      'includeNone': cfg.includeNone,
       'k': k,
       'position': [walker.pos.r, walker.pos.c],
       'visited': walker.visited.length,
@@ -329,7 +405,9 @@ class Experiment {
       apiTime += res.latency;
       final moves = answersToMoves(res.answers);
       final eval = evaluateSequence(maze, moves,
-          from: walker.pos, visited: walker.visited);
+          from: walker.pos,
+          visited: walker.visited,
+          stopAtGoal: !options.includeNone);
       record.addAll({
         'status': 'ok',
         'latencyMs': res.latency.inMilliseconds,
@@ -771,6 +849,11 @@ class Experiment {
 
       if (result.atGoal) {
         solved = true;
+        if (!cfg.includeNone) {
+          // No NONE option to check; code detects the goal.
+          endReason = 'goal';
+          break;
+        }
         continue; // one more call to check for NONE
       }
       if (result.after == result.before) {
@@ -798,7 +881,7 @@ class Experiment {
       'solutionLength': maze.solutionLength,
       'iterations': iteration,
       'solved': solved,
-      'saidNoneAtGoal': saidNoneAtGoal,
+      'saidNoneAtGoal': cfg.includeNone ? saidNoneAtGoal : null,
       'endReason': endReason,
       'firstErrorIndex': firstErrorIndex,
       'movesBeforeFirstError': firstErrorIndex ?? iteration,

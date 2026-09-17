@@ -40,6 +40,13 @@ void main(List<String> argv) async {
     ..addOption('algo', allowed: ['prim', 'dfs'], help: 'Maze generator.')
     ..addOption('state', allowed: StateOptions.variants.keys.toList(),
         defaultsTo: 'baseline', help: 'Which pieces of context go into the state.')
+    ..addOption('labels', allowed: ['arrows', 'compass'], defaultsTo: 'arrows',
+        help: 'UP/DOWN/LEFT/RIGHT or N/S/W/E.')
+    ..addFlag('none', defaultsTo: true,
+        help: 'Offer NONE as an answer (--no-none: code stops at the goal).')
+    ..addOption('recipes',
+        help: 'ablate only: comma list of prompt recipes to compare '
+            '(${Recipe.all.keys.join(', ')}). Default compares state variants.')
     ..addFlag('trail', defaultsTo: true, help: 'Draw visited cells as "." in the maze.')
     ..addOption('seed', help: 'Base RNG seed for maze generation.')
     ..addOption('delay-ms', help: 'Pause between API calls.')
@@ -110,7 +117,11 @@ DemoConfig _configFrom(ArgResults args) {
     cfg = cfg.copyWith(phrasing: Phrasing.parse(args['phrasing'] as String));
   }
   if (args['algo'] != null) cfg = cfg.copyWith(algo: args['algo'] as String);
-  cfg = cfg.copyWith(stateVariant: args['state'] as String);
+  cfg = cfg.copyWith(
+    stateVariant: args['state'] as String,
+    labels: DirLabels.values.byName(args['labels'] as String),
+    includeNone: args['none'] as bool,
+  );
   cfg = cfg.copyWith(showTrail: args['trail'] as bool);
   if (args['seed'] != null) cfg = cfg.copyWith(seed: int.parse(args['seed'] as String));
   if (args['delay-ms'] != null) {
@@ -154,8 +165,7 @@ String _defaultOut() {
 void _show(DemoConfig cfg, int size) {
   final maze = Maze.generate(size, seed: cfg.seed + size * 1000, algo: cfg.algo);
   final walker = Walker(maze);
-  final state = buildState(maze, walker,
-      options: StateOptions.named(cfg.stateVariant).copyWith(trail: cfg.showTrail));
+  final state = buildState(maze, walker, options: cfg.stateOptions);
   print('size=$size grid=${maze.width}x${maze.width} chars=${maze.charCount} '
       'optimalMoves=${maze.solutionLength} hardCap=${DemoConfig.hardCapMultiplier * maze.solutionLength}');
   print('');
@@ -165,7 +175,8 @@ void _show(DemoConfig cfg, int size) {
   print(const JsonEncoder.withIndent('  ').convert(state));
   print('');
   for (final p in Phrasing.values) {
-    final q = stepQuestions(p, 2);
+    final q = stepQuestions(p, 2,
+        labels: cfg.labels, includeNone: cfg.includeNone);
     print('phrasing ${p.name}: ${jsonEncode(q)}');
   }
   print('');
@@ -208,12 +219,29 @@ Future<void> _ablate(DemoConfig base, ArgResults args) async {
   if (args['k'] == null) cfg = cfg.copyWith(k: 25);
   if (args['phrasing'] == null) cfg = cfg.copyWith(phrasing: Phrasing.bare);
 
+  // Either compare state variants (default) or named prompt recipes.
+  final Map<String, DemoConfig> arms;
+  if (args['recipes'] != null) {
+    final names = (args['recipes'] as String).split(',').map((s) => s.trim());
+    arms = {
+      for (final n in names)
+        n: (Recipe.all[n] ?? (throw ArgumentError('Unknown recipe: $n'))).apply(cfg),
+    };
+  } else {
+    arms = {
+      for (final v in StateOptions.variants.keys) v: cfg.copyWith(stateVariant: v),
+    };
+  }
+
   final rows = <List<String>>[];
-  for (final variant in StateOptions.variants.keys) {
+  for (final arm in arms.entries) {
+    final variant = arm.key;
+    final armCfg = arm.value;
     print('');
-    print('===== state variant: $variant');
+    print('===== $variant: state=${armCfg.stateVariant} phrasing=${armCfg.phrasing?.name} '
+        'labels=${armCfg.labels.name} none=${armCfg.includeNone} k=${armCfg.k}');
     final dir = await _runPhases(
-      cfg.copyWith(stateVariant: variant, label: 'ablate-$variant'),
+      armCfg.copyWith(label: 'ablate-$variant'),
       args,
       'sweep',
       quiet: true,
@@ -249,10 +277,10 @@ Future<void> _ablate(DemoConfig base, ArgResults args) async {
     ]);
   }
   print('');
-  print('State variant comparison (Mode A loop, sizes ${cfg.plan.map((p) => p.size).join(',')}, '
-      '${cfg.plan.first.trials} mazes each, cap ${cfg.plan.first.iterCap}, k=${cfg.k})');
+  print('Comparison (Mode A loop, sizes ${cfg.plan.map((p) => p.size).join(',')}, '
+      '${cfg.plan.first.trials} mazes each, cap ${cfg.plan.first.iterCap})');
   print(table(
-    ['variant', 'solved', 'cleanMoves', 'validPrefix', 'optimalPrefix', 'errors', 'inputTok', 'cost'],
+    ['arm', 'solved', 'cleanMoves', 'validPrefix', 'optimalPrefix', 'errors', 'inputTok', 'cost'],
     rows,
   ));
   print('  cleanMoves = loop moves before the first error; validPrefix/optimalPrefix =');
