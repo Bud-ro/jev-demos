@@ -242,8 +242,8 @@ class Experiment {
     final hard = GraphConfig.hardCapMultiplier * m.optimalMoves;
     final cap = plan.cap < hard ? plan.cap : hard;
     final baselines = [
-      simulateBaseline(m, policy: 'random', cap: cap, runs: cfg.baselineRuns, seed: cfg.seed),
-      simulateBaseline(m, policy: 'unvisited', cap: cap, runs: cfg.baselineRuns, seed: cfg.seed),
+      for (final policy in baselinePolicies)
+        simulateBaseline(m, policy: policy, cap: cap, runs: cfg.baselineRuns, seed: cfg.seed),
     ];
     await run.jsonl('mazes.jsonl').write({
       'mazeId': id, 'trial': trial, ...m.toJson(), 'cap': cap,
@@ -355,8 +355,7 @@ class Experiment {
     await run.jsonl('episodes.jsonl').write(episode);
     _log('[sweep] $id done: ${solved ? 'SOLVED' : 'unsolved'} in $moves moves '
         '(optimal ${m.optimalMoves}, cap $cap), end=$endReason, '
-        'random baseline solves ${(baselines[0].solveRate * 100).round()}%, '
-        'unvisited policy ${(baselines[1].solveRate * 100).round()}%');
+        'baselines: ${baselines.map((b) => '${b.policy} ${(b.solveRate * 100).round()}%').join(', ')}');
     return endReason == 'infeasible';
   }
 

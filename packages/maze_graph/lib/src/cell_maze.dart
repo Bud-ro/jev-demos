@@ -184,7 +184,10 @@ class CellMaze {
 
 /// Code-only baselines run under the same cap, so Jev's result can be read
 /// against chance. `random` picks a uniformly random exit; `unvisited` picks
-/// uniformly among the least-visited exits (a one-line exploration policy).
+/// uniformly among the least-visited exits (a one-line exploration policy);
+/// `greedy` picks, among the least-visited exits, the one closest to the goal
+/// by row + column (the "head down-right" heuristic the goal placement
+/// invites).
 class Baseline {
   const Baseline(this.policy, this.solveRate, this.meanMovesSolved, this.runs);
   final String policy;
@@ -199,6 +202,8 @@ class Baseline {
         'runs': runs,
       };
 }
+
+const baselinePolicies = ['random', 'unvisited', 'greedy'];
 
 Baseline simulateBaseline(
   CellMaze m, {
@@ -218,9 +223,14 @@ Baseline simulateBaseline(
     while (cell != m.goal && moves < cap) {
       final ex = m.exits[cell];
       List<int> pool;
-      if (policy == 'unvisited') {
+      if (policy == 'unvisited' || policy == 'greedy') {
         final minV = ex.map((c) => visits[c]).reduce(math.min);
         pool = ex.where((c) => visits[c] == minV).toList();
+        if (policy == 'greedy') {
+          int score(int c) => c ~/ m.n + c % m.n;
+          final best = pool.map(score).reduce(math.max);
+          pool = pool.where((c) => score(c) == best).toList();
+        }
       } else {
         pool = ex;
       }

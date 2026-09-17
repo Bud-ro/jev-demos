@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:jev_common/jev_common.dart';
 
+import 'cell_maze.dart';
+
 class RunAnalysis {
   RunAnalysis(this.summary, this.report);
   final Map<String, Object?> summary;
@@ -12,6 +14,19 @@ class RunAnalysis {
 Future<RunAnalysis> analyzeRun(Directory dir) async {
   final run = RunDir(dir);
   final episodes = readJsonl(run.file('episodes.jsonl')).where((e) => e['skipped'] != true).toList();
+  // Baselines are recomputed here from the recorded mazes so every policy is
+  // available for older runs too. 
+  final mazes = {for (final m in readJsonl(run.file('mazes.jsonl'))) m['mazeId'] as String: m};
+  final baselineCache = <String, Map<String, Baseline>>{};
+  Map<String, Baseline> baselinesFor(Map<String, dynamic> episode) =>
+      baselineCache.putIfAbsent(episode['mazeId'] as String, () {
+        final mj = mazes[episode['mazeId']]!;
+        final m = CellMaze.generate(mj['n'] as int, seed: mj['seed'] as int, extra: (mj['extra'] as num).toDouble());
+        return {
+          for (final p in baselinePolicies)
+            p: simulateBaseline(m, policy: p, cap: episode['cap'] as int, runs: 1000),
+        };
+      });
   final requests = readJsonl(run.file('requests.jsonl')).where((r) => r['status'] == 'ok').toList();
   final meta = run.file('run.json').existsSync()
       ? jsonDecode(run.file('run.json').readAsStringSync()) as Map<String, dynamic>
@@ -40,8 +55,8 @@ Future<RunAnalysis> analyzeRun(Directory dir) async {
       ends['${e['endReason']}'] = (ends['${e['endReason']}'] ?? 0) + 1;
     }
     double? baseline(String policy, String key) => mean(eps.map((e) {
-          final b = (e['baselines'] as List).cast<Map<String, dynamic>>().firstWhere((b) => b['policy'] == policy);
-          return (b[key] as num?) ?? 0;
+          final b = baselinesFor(e)[policy]!;
+          return key == 'solveRate' ? b.solveRate : (b.meanMovesSolved ?? 0);
         }));
     final s = {
       'trials': eps.length,
@@ -59,6 +74,8 @@ Future<RunAnalysis> analyzeRun(Directory dir) async {
       'randomMoves': baseline('random', 'meanMovesSolved'),
       'unvisitedSolveRate': baseline('unvisited', 'solveRate'),
       'unvisitedMoves': baseline('unvisited', 'meanMovesSolved'),
+      'greedySolveRate': baseline('greedy', 'solveRate'),
+      'greedyMoves': baseline('greedy', 'meanMovesSolved'),
       'endReasons': ends,
       'meanInputTokens': mean(reqs.map((r) => (r['usage'] as Map)['input_tokens'] as num)),
       'meanLatencyMs': mean(reqs.map((r) => r['latencyMs'] as num)),
@@ -84,6 +101,7 @@ Future<RunAnalysis> analyzeRun(Directory dir) async {
       f(s['meanRatio']), pct(s['optimalHopRate']), pct(s['revisitRate']), pct(s['forcedShare']),
       f(s['meanConfidence']), pct(s['randomSolveRate']), f(s['randomMoves'], 0),
       pct(s['unvisitedSolveRate']), f(s['unvisitedMoves'], 0),
+      pct(s['greedySolveRate']), f(s['greedyMoves'], 0),
       ends.entries.map((e) => '${e.key}=${e.value}').join(' '),
       f(s['meanInputTokens'], 0),
     ]);
@@ -100,11 +118,12 @@ Future<RunAnalysis> analyzeRun(Directory dir) async {
   out.writeln('Graph-state loop: one legal-exit Choice per move (pahndev methodology), per maze size');
   out.writeln(_table([
     'size', 'trials', 'solved', 'optimal', 'moves', 'ratio', 'bestHop', 'revisit', 'forced', 'conf',
-    'rndSolve', 'rndMoves', 'unvSolve', 'unvMoves', 'end', 'inputTok'
+    'rndSolve', 'rndMoves', 'unvSolve', 'unvMoves', 'grdSolve', 'grdMoves', 'end', 'inputTok'
   ], rows));
   out.writeln('  moves/ratio = for solved mazes, moves taken and moves/optimal; bestHop = share of moves');
   out.writeln('  that reduce the shortest distance; forced = share of moves with only one legal exit;');
-  out.writeln('  rnd/unv = code baselines under the same cap: uniform random exit, and least-visited exit.');
+  out.writeln('  rnd/unv/grd = code baselines under the same cap: uniform random exit, least-visited');
+  out.writeln('  exit, and least-visited exit nearest the goal by row+column (greedy down-right).');
   out.writeln();
   if (depthRows.any((r) => r.skip(1).any((c) => c.isNotEmpty))) {
     out.writeln('Lookahead by depth: P(move i reduces the shortest distance), move 1 = the legal-exit choice');

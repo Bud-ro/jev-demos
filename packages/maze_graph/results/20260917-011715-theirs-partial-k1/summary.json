@@ -56,10 +56,12 @@
       "forcedShare": 0.07377049180327869,
       "meanConfidence": 0.8938524590163923,
       "progress": 1.0,
-      "randomSolveRate": 0.20735,
-      "randomMoves": 38.017870571599346,
-      "unvisitedSolveRate": 0.97195,
-      "unvisitedMoves": 19.094843518663033,
+      "randomSolveRate": 0.21760000000000002,
+      "randomMoves": 38.05694407231197,
+      "unvisitedSolveRate": 0.9728,
+      "unvisitedMoves": 18.944639863172682,
+      "greedySolveRate": 1.0,
+      "greedyMoves": 12.5172,
       "endReasons": {
         "goal": 10
       },
