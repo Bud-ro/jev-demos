@@ -7,4 +7,5 @@ library;
 
 export 'src/client.dart';
 export 'src/env.dart';
+export 'src/pricing.dart';
 export 'src/recorder.dart';

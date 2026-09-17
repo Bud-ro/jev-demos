@@ -7,6 +7,7 @@ import 'package:jev_common/jev_common.dart';
 import 'package:test/test.dart';
 
 void main() {
+  _pricingTests();
   group('JevClient', () {
     test('serializes questions and parses typed answers', () async {
       late Map<String, dynamic> sent;
@@ -103,6 +104,20 @@ void main() {
       expect(env['C'], 'three');
       expect(env['PATH'], isNot('nope'));
       dir.deleteSync(recursive: true);
+    });
+  });
+}
+
+void _pricingTests() {
+  group('JevPricing', () {
+    test('computes cost from list price and honours env overrides', () {
+      const p = JevPricing();
+      expect(p.cost(inputTokens: 1000000), closeTo(0.042, 1e-9));
+      expect(p.cost(inputTokens: 500000, outputTokens: 999999), closeTo(0.021, 1e-9));
+      final o = JevPricing.fromEnv({'TYPESAFE_INPUT_USD_PER_MTOK': '1.5'});
+      expect(o.cost(inputTokens: 2000000), closeTo(3.0, 1e-9));
+      expect(JevPricing.usd(0.0123), '\$0.0123');
+      expect(JevPricing.usd(2.5), '\$2.50');
     });
   });
 }
