@@ -209,13 +209,13 @@ void _plan(DemoConfig cfg, Directory? measuredFrom) {
 /// side-by-side comparison. Defaults: size 5, 3 mazes, cap 30, k 25.
 Future<void> _ablate(DemoConfig base, ArgResults args) async {
   var cfg = base;
-  if (args['sizes'] == null) cfg = cfg.copyWith(plan: [const SizePlan(5, trials: 3, iterCap: 30)]);
-  if (args['trials'] == null) {
-    cfg = cfg.copyWith(plan: [for (final p in cfg.plan) SizePlan(p.size, trials: 3, iterCap: p.iterCap)]);
-  }
-  if (args['iter-cap'] == null) {
-    cfg = cfg.copyWith(plan: [for (final p in cfg.plan) SizePlan(p.size, trials: p.trials, iterCap: 30)]);
-  }
+  final trials = args['trials'] == null ? 3 : int.parse(args['trials'] as String);
+  final capRaw = args['iter-cap'] as String?;
+  final cap = capRaw == null ? 30 : (capRaw == 'none' ? null : int.parse(capRaw));
+  final sizes = args['sizes'] == null ? [5] : cfg.plan.map((p) => p.size).toList();
+  cfg = cfg.copyWith(plan: [
+    for (final s in sizes) SizePlan(s, trials: trials, iterCap: cap),
+  ]);
   if (args['k'] == null) cfg = cfg.copyWith(k: 25);
   if (args['phrasing'] == null) cfg = cfg.copyWith(phrasing: Phrasing.bare);
 
