@@ -1,0 +1,12 @@
+name: jev_common
+description: Shared scaffold for Jev demos - API client shim, .env loading, JSONL recording.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.11.0
+dependencies:
+  http: ^1.2.0
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
