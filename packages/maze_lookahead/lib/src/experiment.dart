@@ -45,6 +45,7 @@ class DemoConfig {
     this.stateVariant = 'baseline',
     this.labels = DirLabels.arrows,
     this.includeNone = true,
+    this.wall = '#',
   });
 
   final String preset;
@@ -82,10 +83,14 @@ class DemoConfig {
   /// Offer NONE as an answer; without it, code stops the loop at the goal.
   final bool includeNone;
 
+  /// Wall character in the rendered maze ('#' or a block).
+  final String wall;
+
   StateOptions get stateOptions => StateOptions.named(stateVariant).copyWith(
         trail: StateOptions.named(stateVariant).trail && showTrail,
         labels: labels,
         includeNone: includeNone,
+        wall: wall,
       );
 
   /// Every episode stops after `hardCapMultiplier * solutionLength` moves.
@@ -186,6 +191,7 @@ class DemoConfig {
     String? stateVariant,
     DirLabels? labels,
     bool? includeNone,
+    String? wall,
   }) =>
       DemoConfig(
         preset: preset,
@@ -208,6 +214,7 @@ class DemoConfig {
         stateVariant: stateVariant ?? this.stateVariant,
         labels: labels ?? this.labels,
         includeNone: includeNone ?? this.includeNone,
+        wall: wall ?? this.wall,
       );
 
   Map<String, Object?> toJson() => {
@@ -226,6 +233,7 @@ class DemoConfig {
         'stateVariant': stateVariant,
         'labels': labels.name,
         'includeNone': includeNone,
+        'wall': wall,
         'seed': seed,
         'delayMs': delay.inMilliseconds,
         'timeBudgetMin': timeBudget.inMinutes,

@@ -42,6 +42,8 @@ void main(List<String> argv) async {
         defaultsTo: 'baseline', help: 'Which pieces of context go into the state.')
     ..addOption('labels', allowed: ['arrows', 'compass'], defaultsTo: 'arrows',
         help: 'UP/DOWN/LEFT/RIGHT or N/S/W/E.')
+    ..addOption('wall', allowed: ['hash', 'block'], defaultsTo: 'hash',
+        help: 'Wall character: # or the full block (U+2588).')
     ..addFlag('none', defaultsTo: true,
         help: 'Offer NONE as an answer (--no-none: code stops at the goal).')
     ..addOption('recipes',
@@ -121,6 +123,7 @@ DemoConfig _configFrom(ArgResults args) {
     stateVariant: args['state'] as String,
     labels: DirLabels.values.byName(args['labels'] as String),
     includeNone: args['none'] as bool,
+    wall: args['wall'] == 'block' ? '\u2588' : '#',
   );
   cfg = cfg.copyWith(showTrail: args['trail'] as bool);
   if (args['seed'] != null) cfg = cfg.copyWith(seed: int.parse(args['seed'] as String));
@@ -169,7 +172,7 @@ void _show(DemoConfig cfg, int size) {
   print('size=$size grid=${maze.width}x${maze.width} chars=${maze.charCount} '
       'optimalMoves=${maze.solutionLength} hardCap=${DemoConfig.hardCapMultiplier * maze.solutionLength}');
   print('');
-  print(maze.renderString(at: walker.pos));
+  print(maze.renderString(at: walker.pos, wallChar: cfg.wall));
   print('');
   print('state (${jsonEncode(state).length} chars as JSON):');
   print(const JsonEncoder.withIndent('  ').convert(state));

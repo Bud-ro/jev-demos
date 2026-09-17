@@ -101,7 +101,11 @@ class StateOptions {
     this.leanRules = false,
     this.labels = DirLabels.arrows,
     this.includeNone = true,
+    this.wall = '#',
   });
+
+  /// Character used for walls in the rendered maze and the legend.
+  final String wall;
 
   /// Include `position` and `goal` row/col plus the coordinate rule.
   final bool coordinates;
@@ -124,7 +128,8 @@ class StateOptions {
   /// Offer NONE as an answer. Without it, code detects the goal.
   final bool includeNone;
 
-  StateOptions copyWith({bool? trail, DirLabels? labels, bool? includeNone}) =>
+  StateOptions copyWith(
+          {bool? trail, DirLabels? labels, bool? includeNone, String? wall}) =>
       StateOptions(
         coordinates: coordinates,
         movesSoFar: movesSoFar,
@@ -133,6 +138,7 @@ class StateOptions {
         leanRules: leanRules,
         labels: labels ?? this.labels,
         includeNone: includeNone ?? this.includeNone,
+        wall: wall ?? this.wall,
       );
 
   /// The answer labels in display order.
@@ -185,8 +191,9 @@ Map<String, Object?> buildState(
   StateOptions options = const StateOptions(),
 }) {
   final trail = options.trail ? walker.visited.difference({walker.pos}) : <Pos>{};
+  final wall = options.wall;
   final legend = {
-    '#': 'wall',
+    wall: 'wall',
     ' ': 'open floor',
     '@': 'your current position',
     'G': 'the goal',
@@ -200,13 +207,13 @@ Map<String, Object?> buildState(
     return {
       'task': 'Navigate the ASCII maze from @ to G by the shortest route. '
           '$up, $down, $left and $right each move @ one character. Never move '
-          'onto # and never back onto a visited tile. '
+          'onto $wall and never back onto a visited tile. '
           '${options.includeNone ? 'Answer $none only when @ is standing on G. ' : ''}'
           'Question N asks for the Nth move from the current '
           'position: 1 is the next move, 2 the one after it, and so on.',
       'legend': legend,
       if (options.neighbors) 'adjacent': adjacentTiles(maze, walker, labels: l),
-      'maze': maze.renderString(at: walker.pos, trail: trail),
+      'maze': maze.renderString(at: walker.pos, trail: trail, wallChar: wall),
     };
   }
   return {
@@ -220,7 +227,7 @@ Map<String, Object?> buildState(
         'coordinates': 'row 0 is the top line, col 0 is the leftmost character.',
       'movement': 'Each move shifts @ by exactly one character: $up is row-1, '
           '$down is row+1, $left is col-1, $right is col+1.',
-      'walls': 'You can never move onto a # character or off the grid.',
+      'walls': 'You can never move onto a $wall character or off the grid.',
       'revisits': 'Never move back onto a position you have already visited.',
       if (options.includeNone)
         'finish': 'Once @ stands on G, every remaining move is $none.',
@@ -235,7 +242,7 @@ Map<String, Object?> buildState(
     if (options.coordinates) 'goal': {'row': maze.goal.r, 'col': maze.goal.c},
     if (options.movesSoFar) 'moves_so_far': walker.steps,
     if (options.neighbors) 'adjacent': adjacentTiles(maze, walker, labels: l),
-    'maze': maze.renderString(at: walker.pos, trail: trail),
+    'maze': maze.renderString(at: walker.pos, trail: trail, wallChar: wall),
   };
 }
 

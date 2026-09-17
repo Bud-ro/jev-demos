@@ -31,6 +31,18 @@ void main() {
       });
     }
 
+    test('block walls render and parse', () {
+      final m = Maze.generate(5, seed: 1);
+      final lines = m.render(at: m.start, wallChar: '\u2588');
+      expect(lines[0], '\u2588' * m.width);
+      expect(lines.join().contains('#'), isFalse);
+      final parsed = Maze.parse(lines);
+      expect(parsed.solutionLength, m.solutionLength);
+      final state = buildState(m, Walker(m), options: const StateOptions(wall: '\u2588'));
+      expect((state['legend'] as Map).keys, contains('\u2588'));
+      expect((state['maze'] as String).contains('#'), isFalse);
+    });
+
     test('render shows @, G, and trail; parse round-trips', () {
       final m = Maze.generate(5, seed: 1);
       final lines = m.render(at: (r: 1, c: 3), trail: {(r: 1, c: 2)});

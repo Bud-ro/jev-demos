@@ -64,7 +64,7 @@ class Maze {
     final size = (w - 1) ~/ 2;
     final wall = List.generate(
       lines.length,
-      (r) => List.generate(w, (c) => lines[r][c] == '#'),
+      (r) => List.generate(w, (c) => wallChars.contains(lines[r][c])),
     );
     Pos? start = at, goal = goalAt;
     for (var r = 0; r < lines.length; r++) {
@@ -147,6 +147,9 @@ class Maze {
     return Maze._(size, wall, (r: 1, c: 1), (r: w - 2, c: w - 2), seed, algo);
   }
 
+  /// Characters [parse] treats as walls.
+  static const wallChars = {'#', '\u2588'};
+
   /// Cells per side.
   final int size;
   final List<List<bool>> _wall;
@@ -228,8 +231,8 @@ class Maze {
   int get solutionLength => distanceFrom(start);
 
   /// Renders the grid. [at] is drawn as `@`, [goal] as `G` (unless `@` sits on
-  /// it), and [trail] positions as `.`.
-  List<String> render({Pos? at, Set<Pos> trail = const {}}) {
+  /// it), [trail] positions as `.`, and walls as [wallChar].
+  List<String> render({Pos? at, Set<Pos> trail = const {}, String wallChar = '#'}) {
     final lines = <String>[];
     for (var r = 0; r < width; r++) {
       final sb = StringBuffer();
@@ -240,7 +243,7 @@ class Maze {
         } else if (p == goal) {
           sb.write('G');
         } else if (_wall[r][c]) {
-          sb.write('#');
+          sb.write(wallChar);
         } else if (trail.contains(p)) {
           sb.write('.');
         } else {
@@ -252,8 +255,8 @@ class Maze {
     return lines;
   }
 
-  String renderString({Pos? at, Set<Pos> trail = const {}}) =>
-      render(at: at, trail: trail).join('\n');
+  String renderString({Pos? at, Set<Pos> trail = const {}, String wallChar = '#'}) =>
+      render(at: at, trail: trail, wallChar: wallChar).join('\n');
 
   Map<String, Object?> toJson() => {
         'size': size,
