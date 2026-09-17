@@ -6,3 +6,4 @@ environment:
 workspace:
   - packages/jev_common
   - packages/maze_lookahead
+  - packages/maze_graph

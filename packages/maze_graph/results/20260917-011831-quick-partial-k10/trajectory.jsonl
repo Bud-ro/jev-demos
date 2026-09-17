@@ -1,0 +1,5 @@
+{"mazeId":"n5-t0","n":5,"trial":0,"move":1,"from":0,"to":1,"dist":13,"optimalHop":true,"revisit":false,"confidence":1.0,"lookaheadOptimal":3,"request":0}
+{"mazeId":"n5-t0","n":5,"trial":0,"move":2,"from":1,"to":2,"dist":12,"optimalHop":true,"revisit":false,"confidence":0.99,"lookaheadOptimal":2,"request":1}
+{"mazeId":"n5-t0","n":5,"trial":0,"move":3,"from":2,"to":3,"dist":11,"optimalHop":true,"revisit":false,"confidence":0.99,"lookaheadOptimal":1,"request":2}
+{"mazeId":"n5-t0","n":5,"trial":0,"move":4,"from":3,"to":8,"dist":10,"optimalHop":true,"revisit":false,"confidence":0.99,"lookaheadOptimal":2,"request":3}
+{"mazeId":"n5-t0","n":5,"trial":0,"move":5,"from":8,"to":9,"dist":9,"optimalHop":true,"revisit":false,"confidence":0.35,"lookaheadOptimal":1,"request":4}

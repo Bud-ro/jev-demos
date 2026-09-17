@@ -1,0 +1,16 @@
+Graph-state loop: one legal-exit Choice per move (pahndev methodology), per maze size
+  size  trials  solved  optimal  moves  ratio  bestHop  revisit  forced  conf  rndSolve  rndMoves  unvSolve  unvMoves  end      inputTok
+  ----  ------  ------  -------  -----  -----  -------  -------  ------  ----  --------  --------  --------  --------  -------  --------
+  5x5   10      10      11.4     12.2   1.10   97%      3%       7%      0.89  21%       38        97%       19        goal=10  768
+  moves/ratio = for solved mazes, moves taken and moves/optimal; bestHop = share of moves
+  that reduce the shortest distance; forced = share of moves with only one legal exit;
+  rnd/unv = code baselines under the same cap: uniform random exit, and least-visited exit.
+
+Lookahead by depth: P(move i reduces the shortest distance), move 1 = the legal-exit choice
+  size  i=1       i=2  i=3  i=4  i=5  i=7  i=10  i=15  i=20
+  ----  --------  ---  ---  ---  ---  ---  ----  ----  ----
+  5x5   97%(122)
+
+Run: packages/maze_graph/results/20260917-011715-theirs-partial-k1
+  preset=theirs observation=partial k=1 mock=false calls=122 inputTokens=93682 elapsed=48s budgetHit=false
+  spend: $0.0039

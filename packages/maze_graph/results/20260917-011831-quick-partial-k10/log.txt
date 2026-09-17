@@ -1,0 +1,7 @@
+run dir: packages/maze_graph/results/20260917-011831-quick-partial-k10
+preset=quick observation=partial k=10 extra=0.12 mock=false
+[sweep] n5-t0 move=  1 0->1         best    dist=  13 conf=1.00 lookahead=3 525ms 1437tok
+[sweep] n5-t0 move=  2 1->2         best    dist=  12 conf=0.99 lookahead=2 442ms 1510tok
+[sweep] n5-t0 move=  3 2->3         best    dist=  11 conf=0.99 lookahead=1 339ms 1550tok
+[sweep] n5-t0 move=  4 3->8         best    dist=  10 conf=0.99 lookahead=2 339ms 1590tok
+[sweep] n5-t0 move=  5 8->9         best    dist=   9 conf=0.35 lookahead=1 411ms 1668tok

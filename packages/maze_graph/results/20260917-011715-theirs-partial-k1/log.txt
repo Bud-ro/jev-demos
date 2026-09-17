@@ -1,0 +1,135 @@
+run dir: packages/maze_graph/results/20260917-011715-theirs-partial-k1
+preset=theirs observation=partial k=1 extra=0.12 mock=false
+[sweep] n5-t0 move=  1 0->1         best    dist=  13 conf=1.00 lookahead=1 464ms 464tok
+[sweep] n5-t0 move=  2 1->2         best    dist=  12 conf=0.99 lookahead=1 398ms 537tok
+[sweep] n5-t0 move=  3 2->3         best    dist=  11 conf=0.99 lookahead=1 415ms 577tok
+[sweep] n5-t0 move=  4 3->8         best    dist=  10 conf=0.99 lookahead=1 436ms 617tok
+[sweep] n5-t0 move=  5 8->9         best    dist=   9 conf=0.24 lookahead=1 407ms 695tok
+[sweep] n5-t0 move=  6 9->14        best    dist=   8 conf=0.80 lookahead=1 379ms 738tok
+[sweep] n5-t0 move=  7 14->19       best    dist=   7 conf=0.98 lookahead=1 406ms 749tok
+[sweep] n5-t0 move=  8 19->18       best    dist=   6 conf=0.92 lookahead=1 866ms 795tok
+[sweep] n5-t0 move=  9 18->17       best    dist=   5 conf=0.86 lookahead=1 397ms 839tok
+[sweep] n5-t0 move= 10 17->16       best    dist=   4 conf=0.83 lookahead=1 344ms 883tok
+[sweep] n5-t0 move= 11 16->21       best    dist=   3 conf=0.91 lookahead=1 615ms 927tok
+[sweep] n5-t0 move= 12 21->22       best    dist=   2 conf=0.96 lookahead=1 383ms 1009tok
+[sweep] n5-t0 move= 13 22->23       best    dist=   1 conf=0.99 lookahead=1 324ms 1018tok
+[sweep] n5-t0 move= 14 23->24       best    dist=   0 conf=0.99 lookahead=1 427ms 1062tok
+[sweep] n5-t0 done: SOLVED in 14 moves (optimal 14, cap 70), end=goal, random baseline solves 11%, unvisited policy 100%
+[sweep] n5-t1 move=  1 0->5         best    dist=  11 conf=1.00 lookahead=1 415ms 464tok
+[sweep] n5-t1 move=  2 5->6         best    dist=  10 conf=1.00 lookahead=1 389ms 537tok
+[sweep] n5-t1 move=  3 6->7         best    dist=   9 conf=0.99 lookahead=1 373ms 577tok
+[sweep] n5-t1 move=  4 7->8         best    dist=   8 conf=0.99 lookahead=1 408ms 617tok
+[sweep] n5-t1 move=  5 8->13        best    dist=   7 conf=0.99 lookahead=1 391ms 660tok
+[sweep] n5-t1 move=  6 13->12       best    dist=   6 conf=0.99 lookahead=1 367ms 704tok
+[sweep] n5-t1 move=  7 12->11       best    dist=   5 conf=0.67 lookahead=1 441ms 750tok
+[sweep] n5-t1 move=  8 11->16       best    dist=   4 conf=0.95 lookahead=1 312ms 794tok
+[sweep] n5-t1 move=  9 16->17       best    dist=   3 conf=0.98 lookahead=1 510ms 838tok
+[sweep] n5-t1 move= 10 17->18       best    dist=   2 conf=0.99 lookahead=1 393ms 882tok
+[sweep] n5-t1 move= 11 18->23       best    dist=   1 conf=0.99 lookahead=1 318ms 926tok
+[sweep] n5-t1 move= 12 23->24       best    dist=   0 conf=0.99 lookahead=1 368ms 1008tok
+[sweep] n5-t1 done: SOLVED in 12 moves (optimal 12, cap 60), end=goal, random baseline solves 20%, unvisited policy 100%
+[sweep] n5-t2 move=  1 0->1         best    dist=  11 conf=1.00 lookahead=1 423ms 464tok
+[sweep] n5-t2 move=  2 1->2         best    dist=  10 conf=0.99 lookahead=1 333ms 537tok
+[sweep] n5-t2 move=  3 2->3         best    dist=   9 conf=0.99 lookahead=1 370ms 577tok
+[sweep] n5-t2 move=  4 3->4         best    dist=   8 conf=0.99 lookahead=1 389ms 617tok
+[sweep] n5-t2 move=  5 4->9         best    dist=   7 conf=0.99 lookahead=1 454ms 657tok
+[sweep] n5-t2 move=  6 9->8         best    dist=   6 conf=0.98 lookahead=1 453ms 697tok
+[sweep] n5-t2 move=  7 8->7         best    dist=   5 conf=0.91 lookahead=1 412ms 737tok
+[sweep] n5-t2 move=  8 7->12        best    dist=   4 conf=0.90 lookahead=1 363ms 815tok
+[sweep] n5-t2 move=  9 12->13       best    dist=   3 conf=0.98 lookahead=1 354ms 826tok
+[sweep] n5-t2 move= 10 13->14       best    dist=   2 conf=0.97 lookahead=1 366ms 872tok
+[sweep] n5-t2 move= 11 14->19       best    dist=   1 conf=0.98 lookahead=1 371ms 916tok
+[sweep] n5-t2 move= 12 19->24       best    dist=   0 conf=0.99 lookahead=1 420ms 960tok
+[sweep] n5-t2 done: SOLVED in 12 moves (optimal 12, cap 60), end=goal, random baseline solves 17%, unvisited policy 100%
+[sweep] n5-t3 move=  1 0->5         best    dist=   7 conf=1.00 lookahead=1 408ms 464tok
+[sweep] n5-t3 move=  2 5->10        best    dist=   6 conf=1.00 lookahead=1 346ms 540tok
+[sweep] n5-t3 move=  3 10->15       best    dist=   5 conf=0.51 lookahead=1 416ms 622tok
+[sweep] n5-t3 move=  4 15->16       best    dist=   4 conf=0.98 lookahead=1 346ms 633tok
+[sweep] n5-t3 move=  5 16->21       best    dist=   3 conf=0.98 lookahead=1 381ms 677tok
+[sweep] n5-t3 move=  6 21->22       best    dist=   2 conf=0.85 lookahead=1 424ms 759tok
+[sweep] n5-t3 move=  7 22->23       best    dist=   1 conf=0.99 lookahead=1 411ms 768tok
+[sweep] n5-t3 move=  8 23->24       best    dist=   0 conf=0.99 lookahead=1 349ms 812tok
+[sweep] n5-t3 done: SOLVED in 8 moves (optimal 8, cap 40), end=goal, random baseline solves 25%, unvisited policy 100%
+[sweep] n5-t4 move=  1 0->1         best    dist=  11 conf=1.00 lookahead=1 414ms 464tok
+[sweep] n5-t4 move=  2 1->6         best    dist=  10 conf=0.99 lookahead=1 325ms 537tok
+[sweep] n5-t4 move=  3 6->7         best    dist=   9 conf=0.99 lookahead=1 341ms 577tok
+[sweep] n5-t4 move=  4 7->2         best    dist=   8 conf=0.97 lookahead=1 369ms 617tok
+[sweep] n5-t4 move=  5 2->3         best    dist=   7 conf=0.91 lookahead=1 379ms 657tok
+[sweep] n5-t4 move=  6 3->8         best    dist=   6 conf=0.97 lookahead=1 338ms 697tok
+[sweep] n5-t4 move=  7 8->9         best    dist=   5 conf=0.98 lookahead=1 351ms 737tok
+[sweep] n5-t4 move=  8 9->14        best    dist=   4 conf=0.90 lookahead=1 870ms 815tok
+[sweep] n5-t4 move=  9 14->13       best    dist=   3 conf=0.93 lookahead=1 354ms 826tok
+[sweep] n5-t4 move= 10 13->18       best    dist=   2 conf=0.90 lookahead=1 387ms 872tok
+[sweep] n5-t4 move= 11 18->23       best    dist=   1 conf=0.96 lookahead=1 350ms 916tok
+[sweep] n5-t4 move= 12 23->24       best    dist=   0 conf=0.99 lookahead=1 429ms 998tok
+[sweep] n5-t4 done: SOLVED in 12 moves (optimal 12, cap 60), end=goal, random baseline solves 18%, unvisited policy 100%
+[sweep] n5-t5 move=  1 0->1         best    dist=   9 conf=1.00 lookahead=1 385ms 464tok
+[sweep] n5-t5 move=  2 1->6         best    dist=   8 conf=1.00 lookahead=1 412ms 537tok
+[sweep] n5-t5 move=  3 6->7         best    dist=   7 conf=0.99 lookahead=1 345ms 577tok
+[sweep] n5-t5 move=  4 7->2         best    dist=   6 conf=0.96 lookahead=1 388ms 617tok
+[sweep] n5-t5 move=  5 2->3         best    dist=   5 conf=0.91 lookahead=1 349ms 657tok
+[sweep] n5-t5 move=  6 3->8         best    dist=   4 conf=0.98 lookahead=1 351ms 697tok
+[sweep] n5-t5 move=  7 8->13        best    dist=   3 conf=0.98 lookahead=1 308ms 740tok
+[sweep] n5-t5 move=  8 13->18       best    dist=   2 conf=0.98 lookahead=1 371ms 784tok
+[sweep] n5-t5 move=  9 18->23       best    dist=   1 conf=0.97 lookahead=1 367ms 830tok
+[sweep] n5-t5 move= 10 23->24       best    dist=   0 conf=0.99 lookahead=1 467ms 912tok
+[sweep] n5-t5 done: SOLVED in 10 moves (optimal 10, cap 50), end=goal, random baseline solves 25%, unvisited policy 100%
+[sweep] n5-t6 move=  1 0->5         best    dist=   7 conf=1.00 lookahead=1 349ms 464tok
+[sweep] n5-t6 move=  2 5->10        best    dist=   6 conf=1.00 lookahead=1 390ms 540tok
+[sweep] n5-t6 move=  3 10->15       best    dist=   5 conf=1.00 lookahead=1 376ms 584tok
+[sweep] n5-t6 move=  4 15->20       best    dist=   4 conf=0.99 lookahead=1 376ms 630tok
+[sweep] n5-t6 move=  5 20->21       best    dist=   3 conf=0.99 lookahead=1 323ms 674tok
+[sweep] n5-t6 move=  6 21->22       best    dist=   2 conf=1.00 lookahead=1 324ms 718tok
+[sweep] n5-t6 move=  7 22->23       best    dist=   1 conf=0.99 lookahead=1 420ms 762tok
+[sweep] n5-t6 move=  8 23->24       best    dist=   0 conf=0.99 lookahead=1 381ms 806tok
+[sweep] n5-t6 done: SOLVED in 8 moves (optimal 8, cap 40), end=goal, random baseline solves 41%, unvisited policy 100%
+[sweep] n5-t7 move=  1 0->5         best    dist=  21 conf=1.00 lookahead=1 348ms 464tok
+[sweep] n5-t7 move=  2 5->10        best    dist=  20 conf=1.00 lookahead=1 353ms 540tok
+[sweep] n5-t7 move=  3 10->15       best    dist=  19 conf=1.00 lookahead=1 378ms 584tok
+[sweep] n5-t7 move=  4 15->16       best    dist=  18 conf=0.99 lookahead=1 356ms 630tok
+[sweep] n5-t7 move=  5 16->21       best    dist=  17 conf=0.99 lookahead=1 367ms 674tok
+[sweep] n5-t7 move=  6 21->22       best    dist=  16 conf=0.97 lookahead=1 363ms 756tok
+[sweep] n5-t7 move=  7 22->17       best    dist=  15 conf=0.90 lookahead=1 335ms 765tok
+[sweep] n5-t7 move=  8 17->12       best    dist=  14 conf=0.91 lookahead=1 452ms 809tok
+[sweep] n5-t7 move=  9 12->11       best    dist=  13 conf=0.86 lookahead=1 821ms 853tok
+[sweep] n5-t7 move= 10 11->6        best    dist=  12 conf=0.71 lookahead=1 387ms 894tok
+[sweep] n5-t7 move= 11 6->1         best    dist=  11 conf=0.55 lookahead=1 391ms 934tok
+[sweep] n5-t7 move= 12 1->2         best    dist=  10 conf=0.77 lookahead=1 400ms 972tok
+[sweep] n5-t7 move= 13 2->7         best    dist=   9 conf=0.86 lookahead=1 347ms 1012tok
+[sweep] n5-t7 move= 14 7->8         best    dist=   8 conf=0.94 lookahead=1 816ms 1052tok
+[sweep] n5-t7 move= 15 8->3         best    dist=   7 conf=0.85 lookahead=1 407ms 1092tok
+[sweep] n5-t7 move= 16 3->4         best    dist=   6 conf=0.86 lookahead=1 353ms 1132tok
+[sweep] n5-t7 move= 17 4->9         best    dist=   5 conf=0.90 lookahead=1 408ms 1172tok
+[sweep] n5-t7 move= 18 9->14        best    dist=   4 conf=0.96 lookahead=1 337ms 1215tok
+[sweep] n5-t7 move= 19 14->13       best    dist=   3 conf=0.96 lookahead=1 396ms 1259tok
+[sweep] n5-t7 move= 20 13->18       best    dist=   2 conf=0.89 lookahead=1 349ms 1305tok
+[sweep] n5-t7 move= 21 18->19       best    dist=   1 conf=0.95 lookahead=1 362ms 1349tok
+[sweep] n5-t7 move= 22 19->24       best    dist=   0 conf=0.99 lookahead=1 406ms 1393tok
+[sweep] n5-t7 done: SOLVED in 22 moves (optimal 22, cap 80), end=goal, random baseline solves 2%, unvisited policy 100%
+[sweep] n5-t8 move=  1 0->1         best    dist=   7 conf=1.00 lookahead=1 396ms 464tok
+[sweep] n5-t8 move=  2 1->6         best    dist=   6 conf=0.99 lookahead=1 356ms 537tok
+[sweep] n5-t8 move=  3 6->11        best    dist=   5 conf=0.28 lookahead=1 336ms 615tok
+[sweep] n5-t8 move=  4 11->12       best    dist=   4 conf=0.97 lookahead=1 341ms 664tok
+[sweep] n5-t8 move=  5 12->13       best    dist=   3 conf=0.79 lookahead=1 314ms 710tok
+[sweep] n5-t8 move=  6 13->18       best    dist=   2 conf=0.84 lookahead=1 365ms 756tok
+[sweep] n5-t8 move=  7 18->19       best    dist=   1 conf=0.83 lookahead=1 433ms 805tok
+[sweep] n5-t8 move=  8 19->24       best    dist=   0 conf=0.99 lookahead=1 380ms 852tok
+[sweep] n5-t8 done: SOLVED in 8 moves (optimal 8, cap 40), end=goal, random baseline solves 26%, unvisited policy 96%
+[sweep] n5-t9 move=  1 0->5         best    dist=   7 conf=0.13 lookahead=1 406ms 499tok
+[sweep] n5-t9 move=  2 5->6         best    dist=   6 conf=0.99 lookahead=1 352ms 539tok
+[sweep] n5-t9 move=  3 6->7         best    dist=   5 conf=0.89 lookahead=1 369ms 614tok
+[sweep] n5-t9 move=  4 7->12        best    dist=   4 conf=0.64 lookahead=1 359ms 659tok
+[sweep] n5-t9 move=  5 12->17       best    dist=   3 conf=0.99 lookahead=1 310ms 670tok
+[sweep] n5-t9 move=  6 17->18       best    dist=   2 conf=0.88 lookahead=1 349ms 754tok
+[sweep] n5-t9 move=  7 18->23       detour  dist=   3 conf=0.58 lookahead=0 382ms 839tok
+[sweep] n5-t9 move=  8 23->22       detour  dist=   4 conf=0.70 lookahead=0 347ms 813tok
+[sweep] n5-t9 move=  9 22->21       detour  dist=   5 conf=0.45 lookahead=0 367ms 857tok
+[sweep] n5-t9 move= 10 21->16       best    dist=   4 conf=0.18 lookahead=1 350ms 939tok
+[sweep] n5-t9 move= 11 16->21       revisit dist=   5 conf=0.60 lookahead=0 325ms 948tok
+[sweep] n5-t9 move= 12 21->22       best    dist=   4 conf=0.25 lookahead=1 361ms 986tok
+[sweep] n5-t9 move= 13 22->23       best    dist=   3 conf=0.77 lookahead=1 348ms 954tok
+[sweep] n5-t9 move= 14 23->18       best    dist=   2 conf=0.83 lookahead=1 370ms 957tok
+[sweep] n5-t9 move= 15 18->19       best    dist=   1 conf=0.52 lookahead=1 379ms 1030tok
+[sweep] n5-t9 move= 16 19->24       best    dist=   0 conf=0.99 lookahead=1 410ms 1042tok
+[sweep] n5-t9 done: SOLVED in 16 moves (optimal 8, cap 40), end=goal, random baseline solves 21%, unvisited policy 76%
+done: 122 calls, 93682 input tokens, 48s elapsed, spend $0.0039
