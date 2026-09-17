@@ -276,6 +276,10 @@ Future<RunAnalysis> analyzeRun(Directory dir) async {
         'phrasing=${meta['phrasingUsed']} calls=${meta['calls']} '
         'inputTokens=${meta['inputTokens']} elapsed=${meta['elapsedSec']}s '
         'apiTime=${meta['apiTimeSec']}s budgetHit=${meta['budgetHit']}');
+    if (meta['costUsd'] != null) {
+      out.writeln('  spend: ${JevPricing.usd((meta['costUsd'] as num).toDouble())} '
+          '(list price, output free)');
+    }
   }
 
   final summary = {

@@ -217,12 +217,14 @@ class AskResult {
 
 /// Runs the phases and records everything to a [RunDir].
 class Experiment {
-  Experiment(this.cfg, this.client, this.run, {void Function(String)? log})
+  Experiment(this.cfg, this.client, this.run,
+      {void Function(String)? log, this.pricing = const JevPricing()})
       : _log = log ?? print;
 
   final DemoConfig cfg;
   final JevClient client;
   final RunDir run;
+  final JevPricing pricing;
   final void Function(String) _log;
 
   final Stopwatch clock = Stopwatch()..start();
@@ -230,6 +232,10 @@ class Experiment {
   int inputTokens = 0;
   int outputTokens = 0;
   Duration apiTime = Duration.zero;
+
+  /// Spend so far at [pricing].
+  double get costUsd =>
+      pricing.cost(inputTokens: inputTokens, outputTokens: outputTokens);
 
   /// size -> max step questions that fit (0 = infeasible).
   final Map<int, int> feasibleK = {};
@@ -819,6 +825,8 @@ class Experiment {
         'calls': calls,
         'inputTokens': inputTokens,
         'outputTokens': outputTokens,
+        'costUsd': costUsd,
+        'pricing': pricing.toJson(),
         'mock': mock,
         'phases': phases,
         'phrasingUsed': phrasing?.name,

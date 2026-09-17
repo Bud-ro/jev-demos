@@ -43,6 +43,8 @@ void main(List<String> argv) async {
     ..addOption('budget-min', help: 'Hard time budget for the run in minutes.')
     ..addOption('out', help: 'Results base directory (default: <package>/results).')
     ..addOption('label', help: 'Suffix for the run directory name.')
+    ..addOption('max-cost-usd', defaultsTo: '1.00',
+        help: 'Refuse to start a real run whose worst-case estimate exceeds this.')
     ..addFlag('mock', help: 'Use the offline oracle instead of the real API.')
     ..addOption('mock-accuracy', defaultsTo: '0.95')
     ..addOption('mock-decay', defaultsTo: '0.97')
@@ -164,68 +166,45 @@ void _show(DemoConfig cfg, int size) {
 }
 
 void _plan(DemoConfig cfg, Directory? measuredFrom) {
-  // Latency guesses per size (seconds) until a probe measures them.
-  const guess = {5: 0.3, 10: 0.35, 20: 0.5, 50: 1.0, 100: 2.0, 200: 4.0, 500: 6.0, 1000: 8.0};
+  final pricing = JevPricing.fromEnv(loadEnv());
   Map<String, dynamic>? meta;
   if (measuredFrom != null) {
     final f = File('${measuredFrom.path}/run.json');
     if (f.existsSync()) meta = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
   }
-  final measuredLatency = (meta?['probeLatencyMs'] as Map<String, dynamic>?) ?? const {};
-  final measuredTokens = (meta?['probeInputTokens'] as Map<String, dynamic>?) ?? const {};
-  final feasible = (meta?['feasibleK'] as Map<String, dynamic>?) ?? const {};
-
-  print('Napkin math for preset "${cfg.preset}" (k=${cfg.k}, '
-      'time budget ${cfg.timeBudget.inMinutes} min, hard cap = '
-      '${DemoConfig.hardCapMultiplier} x optimal moves)');
-  print('');
-  final rows = <List<String>>[];
-  var totalCalls = 0;
-  var totalSec = 0.0;
-  for (final p in cfg.plan) {
-    final maze = Maze.generate(p.size, seed: cfg.seed + p.size * 1000, algo: cfg.algo);
-    final hard = DemoConfig.hardCapMultiplier * maze.solutionLength;
-    final cap = p.iterCap == null ? hard : (p.iterCap! < hard ? p.iterCap! : hard);
-    final worstCalls = p.trials * (cap + 1); // +1 for the at-goal NONE check
-    final sec = (measuredLatency['${p.size}'] as num?)?.toDouble() ?? guess[p.size]! * 1000;
-    final estTokens = (measuredTokens['${p.size}'] as num?)?.toInt() ??
-        (maze.charCount / 2.5 + 400 + cfg.k * 12).round();
-    final infeasible = feasible['${p.size}'] == 0 || estTokens > 32000;
-    if (!infeasible) {
-      totalCalls += worstCalls;
-      totalSec += worstCalls * sec / 1000;
-    }
-    rows.add([
-      '${p.size}',
-      '${maze.width}x${maze.width}',
-      '${maze.charCount}',
-      '~$estTokens${infeasible ? ' (over)' : ''}',
-      '${maze.solutionLength}',
-      '${p.trials}',
-      '$cap',
-      '$worstCalls',
-      '${(sec / 1000).toStringAsFixed(2)}s',
-      infeasible ? 'skip' : '${(worstCalls * sec / 60000).toStringAsFixed(1)} min',
-    ]);
-  }
-  print(_plainTable(
-    ['size', 'grid', 'chars', 'inputTok', 'optimal', 'trials', 'cap', 'worstCalls', 'lat', 'worstTime'],
-    rows,
-  ));
-  print('');
-  final overhead = cfg.probeSizes.length +
-      cfg.phrasingSizes.length * cfg.phrasingTrials * Phrasing.values.length +
-      cfg.independenceTrials * cfg.independenceKs.length;
-  print('sweep worst case: $totalCalls calls, ~${(totalSec / 60).toStringAsFixed(1)} min');
-  print('probe + phrasing + independence: ~$overhead calls (small mazes, well under a minute)');
-  print('Episodes end early on goal, on two consecutive stalls, or when the time budget');
-  print('is hit, so the real run is usually well under the worst case.');
-  print('Token estimate assumes ~2.5 maze chars per token; run "probe" to measure.');
+  Map<int, T> parse<T>(String key, T Function(num) conv) => {
+        for (final e in ((meta?[key] as Map<String, dynamic>?) ?? const {}).entries)
+          int.parse(e.key): conv(e.value as num),
+      };
+  final estimate = estimatePlan(
+    cfg,
+    pricing: pricing,
+    feasibleK: parse('feasibleK', (v) => v.toInt()),
+    probeTokens: parse('probeInputTokens', (v) => v.toInt()),
+    probeLatency: parse('probeLatencyMs', (v) => Duration(milliseconds: v.toInt())),
+  );
+  if (meta != null) print('(using measurements from ${measuredFrom!.path})\n');
+  print(formatEstimate(estimate));
 }
 
 Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
   final mock = args['mock'] as bool;
   final startedAt = DateTime.now();
+  final env = loadEnv();
+  final pricing = mock ? const JevPricing() : JevPricing.fromEnv(env);
+
+  // Cost and time check before the first call.
+  final estimate = estimatePlan(cfg, pricing: pricing);
+  print(summaryLine(estimate));
+  final maxCost = double.parse(args['max-cost-usd'] as String);
+  if (!mock && estimate.worstCostUsd > maxCost) {
+    stderr.writeln('Refusing to start: worst-case cost ${JevPricing.usd(estimate.worstCostUsd)} '
+        'exceeds --max-cost-usd ${JevPricing.usd(maxCost)}. Shrink the plan '
+        '(--sizes, --trials, --iter-cap, --k) or raise the limit.');
+    exit(2);
+  }
+  if (mock) print('(mock run: no real spend; estimate shown for reference)');
+
   final JevClient client;
   if (mock) {
     final oracle = MockJev(
@@ -236,7 +215,7 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
     );
     client = JevClient(apiKey: 'mock', httpClient: oracle.client());
   } else {
-    client = JevClient.fromEnv(loadEnv());
+    client = JevClient.fromEnv(env);
   }
 
   final label = '${cfg.label}${mock ? '-mock' : ''}${command == 'all' ? '' : '-$command'}';
@@ -250,15 +229,29 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
   log('run dir: ${run.path}');
   log('preset=${cfg.preset} k=${cfg.k} algo=${cfg.algo} trail=${cfg.showTrail} '
       'mock=$mock budget=${cfg.timeBudget.inMinutes}min');
-  final exp = Experiment(cfg, client, run, log: log);
+  final exp = Experiment(cfg, client, run, log: log, pricing: pricing);
   final phases = <String>[];
   Phrasing? phrasing = cfg.phrasing;
+
+  // After the probe we know real token counts and latencies; re-estimate.
+  void refine() {
+    final refined = estimatePlan(
+      cfg,
+      pricing: pricing,
+      feasibleK: exp.feasibleK,
+      probeTokens: exp.probeTokens,
+      probeLatency: exp.probeLatency,
+    );
+    log('REFINED ${summaryLine(refined)}');
+    log('spent so far: ${JevPricing.usd(exp.costUsd)} over ${exp.calls} calls');
+  }
 
   try {
     switch (command) {
       case 'probe':
         phases.add('probe');
         await exp.probe();
+        refine();
       case 'phrasing':
         phases.add('phrasing');
         phrasing = await exp.phrasingExperiment();
@@ -267,10 +260,13 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
         await exp.independenceCheck(phrasing ?? Phrasing.bare);
       case 'sweep':
         phases.add('sweep');
+        await exp.probe(sizes: cfg.plan.map((p) => p.size).toList());
+        refine();
         await exp.sweep(phrasing ?? Phrasing.bare);
       case 'all':
         phases.add('probe');
         await exp.probe();
+        refine();
         phases.add('phrasing');
         phrasing = await exp.phrasingExperiment();
         phases.add('independence');
@@ -285,7 +281,8 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
     client.close();
     log('done: ${exp.calls} calls, ${exp.inputTokens} input tokens, '
         '${exp.clock.elapsed.inSeconds}s elapsed '
-        '(${(exp.apiTime.inMilliseconds / 1000).toStringAsFixed(1)}s in API)');
+        '(${(exp.apiTime.inMilliseconds / 1000).toStringAsFixed(1)}s in API), '
+        'spend ${JevPricing.usd(exp.costUsd)}${mock ? ' (mock, not billed)' : ''}');
     await logFile.close();
   }
 
@@ -293,16 +290,4 @@ Future<void> _runPhases(DemoConfig cfg, ArgResults args, String command) async {
   print('');
   print(analysis.report);
   print('summary: ${run.file('summary.json').path}');
-}
-
-String _plainTable(List<String> header, List<List<String>> rows) {
-  final widths = List<int>.generate(header.length, (i) => header[i].length);
-  for (final row in rows) {
-    for (var i = 0; i < row.length; i++) {
-      if (row[i].length > widths[i]) widths[i] = row[i].length;
-    }
-  }
-  String line(List<String> cells) =>
-      [for (var i = 0; i < widths.length; i++) cells[i].padRight(widths[i])].join('  ');
-  return [line(header), widths.map((w) => '-' * w).join('  '), ...rows.map(line)].join('\n');
 }

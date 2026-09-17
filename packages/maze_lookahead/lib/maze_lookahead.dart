@@ -2,6 +2,7 @@
 library;
 
 export 'src/analyze.dart';
+export 'src/estimate.dart';
 export 'src/experiment.dart';
 export 'src/maze.dart';
 export 'src/mock.dart';
